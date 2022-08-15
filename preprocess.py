@@ -91,6 +91,7 @@ def process_img(img, inp_dim):
     input PIL img, return processed img
     """
     dim = img.width, img.height
+
     img = (letterbox_image(np.asarray(img), (inp_dim, inp_dim)))
     img_ = img.transpose((2, 0, 1)).copy()  # WxHxchans => chansxWxH
     img_ = torch.from_numpy(img_).float().div(255.0).unsqueeze(0) 

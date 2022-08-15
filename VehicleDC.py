@@ -31,10 +31,9 @@ from tqdm import tqdm
 # for matplotlib to displacy chinese characters correctly
 from pylab import *
 mpl.rcParams['font.sans-serif'] = ['SimHei']
-
 use_cuda = True  # True
 os.environ['CUDA_DEVICE_ORDER'] = 'PCI_BUS_ID'
-os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
+os.environ['CUDA_VISIBLE_DEVICES'] = '0'
 device = torch.device(
     'cuda: 0' if torch.cuda.is_available() and use_cuda else 'cpu')
 
@@ -156,9 +155,9 @@ class Car_Classifier(object):
         type_idx = pred_type.max(1, keepdim=True)[1]
         pred = torch.cat((color_idx, direction_idx, type_idx), dim=1)
         # ---------通过softmax输出概率值------------------------
-        print(color_idx,torch.nn.Softmax()(pred_color), 'pred_color 概率\n',
-              direction_idx, torch.nn.Softmax()(pred_direction), 'pred_direction 概率\n',
-              type_idx,torch.nn.Softmax()(pred_type), 'pred_type 概率\n')
+        # print(color_idx,torch.nn.Softmax()(pred_color), 'pred_color 概率\n',
+        #       direction_idx, torch.nn.Softmax()(pred_direction), 'pred_direction 概率\n',
+        #       type_idx,torch.nn.Softmax()(pred_type), 'pred_type 概率\n')
         return pred
 
     def pre_process(self, image):
@@ -281,8 +280,8 @@ class Car_DC():
             labels.append(label)
             print('=> predicted label: ', label)
 
-            ROI.save(r'./rois/%s_%s.jpg'%(str(self.imid).zfill(5),label))
-            print('saved in:',str(self.imid).zfill(5),label)
+            # ROI.save(r'./rois/%s_%s.jpg'%(str(self.imid).zfill(5),label))
+            # print('saved in:',str(self.imid).zfill(5),label)
             # cv2.imwrite(r'rois/%s_%s.jpg'%(str(self.imid).zfill(5),label),np.array(ROI))
             self.imid+=1
 
@@ -292,7 +291,7 @@ class Car_DC():
             pt_1 = pt_1s[i]
             pt_2 = pt_2s[i]
             # draw bounding box
-            cv2.rectangle(orig_img, pt_1, pt_2, color, thickness=2)
+            cv2.rectangle(orig_img, pt_1, pt_2, color, thickness=1)
 
             # get str text size
             txt_size = cv2.getTextSize(
@@ -338,16 +337,16 @@ class Car_DC():
                     output[i, [2, 4]], 0.0, orig_img_size[1])
         return output
 
-    def detect_classify(self):
-        """
-        detect and classify
-        """
-        for x in self.imgs_path:
-            # read image data
-            img = Image.open(x)
+    def detcls_video(self,video_path):
+        cap=cv2.VideoCapture(video_path)
+        k=0
+        while(1):
+            _,frame=cap.read()
+
+            img=Image.fromarray(frame)
             img2det = process_img(img, self.inp_dim)
             img2det = img2det.to(device)  # put image data to device
-
+            k+=1
             # vehicle detection
             prediction = self.detector.forward(img2det, CUDA=False)
             # calculating scaling factor
@@ -359,23 +358,53 @@ class Car_DC():
                                           self.inp_dim,
                                           orig_img_size)
 
-            orig_img = cv2.cvtColor(np.asarray(
-                img), cv2.COLOR_RGB2BGR)  # RGB => BGR
+            orig_img = np.asarray(img)  # RGB => BGR
+
             if type(output) != int:
                 # try:
                 self.cls_draw_bbox(output, orig_img)
                 # except:
                 #     print(output.shape)
-                dst_path = self.dst_dir + '/' + os.path.split(x)[1]
-                if not os.path.exists(dst_path):
-                    cv2.imwrite(dst_path, orig_img)
+                cv2.imwrite("test_result/%s.jpg"%str(k).zfill(6),orig_img)
+
+    # def detect_classify(self):
+    #     """
+    #     detect and classify
+    #     """
+    #     for x in self.imgs_path:
+    #         # read image data
+    #         img = Image.open(x)
+    #         img2det = process_img(img, self.inp_dim)
+    #         img2det = img2det.to(device)  # put image data to device
+    #
+    #         # vehicle detection
+    #         prediction = self.detector.forward(img2det, CUDA=False)
+    #         # calculating scaling factor
+    #         orig_img_size = list(img.size)
+    #         output = self.process_predict(prediction,
+    #                                       self.prob_th,
+    #                                       self.num_classes,
+    #                                       self.nms_th,
+    #                                       self.inp_dim,
+    #                                       orig_img_size)
+    #
+    #         orig_img = cv2.cvtColor(np.asarray(
+    #             img), cv2.COLOR_RGB2BGR)  # RGB => BGR
+    #         if type(output) != int:
+    #             # try:
+    #             self.cls_draw_bbox(output, orig_img)
+    #             # except:
+    #             #     print(output.shape)
+    #             dst_path = self.dst_dir + '/' + os.path.split(x)[1]
+    #             if not os.path.exists(dst_path):
+    #                 cv2.imwrite(dst_path, orig_img)
 
 # -----------------------------------------------------------
 
 parser = argparse.ArgumentParser(description='Detect and classify cars.')
 parser.add_argument('-src-dir',
                     type=str,
-                    default='./Dongmen',
+                    default='../Vehicle-Car-detection-and-multilabel-classification-master/Dongmen',
                     help='source directory of images')
 parser.add_argument('-dst-dir',
                     type=str,
@@ -390,4 +419,5 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
     DR_model = Car_DC(src_dir=args.src_dir, dst_dir=args.dst_dir)
-    DR_model.detect_classify()
+    # DR_model.detect_classify()
+    DR_model.detcls_video(r"0004301.avi")
