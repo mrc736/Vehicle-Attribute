@@ -32,7 +32,7 @@ This module is responsible for interface encapsulation of vehicle detection and 
 Vehicle detection: sigle image inference cost 18ms on single GTX1050TI. </br>
 Vehicle classification: single image inference cost 10ms on single GTX1050TI.
 
-##### <2>. 车辆多标签数据模块（由于保密协议等原因暂时不能公开数据集） dataset.py </br>
+##### <2>. 车辆多标签数据模块 dataset.py </br>
 训练、测试数据类别按照子目录存放，子目录名即label，Color_Direction_type，如Yellow_Rear_suv。 </br>
 Vehicle类重载了data.Dataset的init, getitem, len方法： </br>
 函数__init__负责初始化数据路径，数据标签，由于数据标签是多标签类型，故对输出向量分段计算交叉熵loss即可。 </br>
